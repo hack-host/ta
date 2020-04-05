@@ -9,7 +9,7 @@ import pandas as pd
 
 from ta.momentum import (AwesomeOscillatorIndicator, KAMAIndicator,
                          ROCIndicator, RSIIndicator, StochasticOscillator,
-                         TSIIndicator, UltimateOscillator, WilliamsRIndicator)
+                         TSIIndicator, UltimateOscillator, WilliamsRIndicator,Heikin_Ashi,Williams_Alligator)
 from ta.others import (CumulativeReturnIndicator, DailyLogReturnIndicator,
                        DailyReturnIndicator)
 from ta.trend import (MACD, ADXIndicator, AroonIndicator, CCIIndicator,
@@ -223,7 +223,7 @@ def add_trend_ta(df: pd.DataFrame, high: str, low: str, close: str, fillna: bool
     return df
 
 
-def add_momentum_ta(df: pd.DataFrame, high: str, low: str, close: str, volume: str,
+def add_momentum_ta(df: pd.DataFrame, high: str, low: str, close: str, open: str, volume: str,
                     fillna: bool = False, colprefix: str = "") -> pd.DataFrame:
     """Add trend technical analysis features to dataframe.
 
@@ -242,6 +242,18 @@ def add_momentum_ta(df: pd.DataFrame, high: str, low: str, close: str, volume: s
     # Relative Strength Index (RSI)
     df[f'{colprefix}momentum_rsi'] = RSIIndicator(close=df[close], n=14, fillna=fillna).rsi()
 
+    # Heinkin-Ashi Indicator 
+    indicator = Heikin_Ashi(close=df[close],high=df[high],low=df[low],open=df[open],n=2,fillna = fillna)
+    df[f'{colprefix}ha_high']  = indicator.ha_high()
+    df[f'{colprefix}ha_low']   = indicator.ha_low()
+    df[f'{colprefix}ha_close'] = indicator.ha_close()
+    df[f'{colprefix}ha_open']  = indicator.ha_open()
+    
+    #Williams_Alligator
+    indicator = Williams_Alligator(high=df[high],low=df[low],jaw=13,teeth=8,lip=5,fillna = fillna)
+    df[f'{colprefix}wa_jaw']  = indicator.wa_jaw()
+    df[f'{colprefix}wa_teeth']  = indicator.wa_teeth()
+    df[f'{colprefix}wa_lip']  = indicator.wa_lip()
     # TSI Indicator
     df[f'{colprefix}momentum_tsi'] = TSIIndicator(close=df[close], r=25, s=13, fillna=fillna).tsi()
 
@@ -315,6 +327,6 @@ def add_all_ta_features(df: pd.DataFrame, open: str, high: str, low: str,
     df = add_volume_ta(df=df, high=high, low=low, close=close, volume=volume, fillna=fillna, colprefix=colprefix)
     df = add_volatility_ta(df=df, high=high, low=low, close=close, fillna=fillna, colprefix=colprefix)
     df = add_trend_ta(df=df, high=high, low=low, close=close, fillna=fillna, colprefix=colprefix)
-    df = add_momentum_ta(df=df, high=high, low=low, close=close, volume=volume, fillna=fillna, colprefix=colprefix)
+    df = add_momentum_ta(df=df, high=high, low=low, close=close,open=open, volume=volume, fillna=fillna, colprefix=colprefix)
     df = add_others_ta(df=df, close=close, fillna=fillna, colprefix=colprefix)
     return df

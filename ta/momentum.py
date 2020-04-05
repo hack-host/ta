@@ -11,6 +11,112 @@ import pandas as pd
 from ta.utils import IndicatorMixin
 
 
+class Heikin_Ashi(IndicatorMixin):
+    def __init__(self,close: pd.Series, high: pd.Series, low: pd.Series, open: pd.Series, n: int =2, fillna: bool =  False):
+        print(type(close))
+        self.frame = pd.concat([close,open,high,low],axis=1)
+        self._n = n
+        self._fillna = fillna
+        self._run()
+        
+    def _run(self):
+        
+        self._ha_close = (self.frame.Close + self.frame.High + self.frame.Low + self.frame.Open)/4
+        self._ha_open  = (self.frame.Open.shift(1) + self.frame.Close.shift(1)) / 2
+        self._ha_high  = (self.frame[['Open','Close','High','Low']]).max(axis=1)
+        self._ha_low   = (self.frame[['Open','Close','High','Low']]).min(axis=1)
+
+        
+    def ha_close(self) -> pd.Series:
+        """Heinki-Ashi Indicator Close
+  
+        Returns:
+            pandas.Series: New feature generated.
+        """
+        ha_close = self._check_fillna(self._ha_close, value=0)
+        return pd.Series(ha_close, name='ha_close')
+    
+    def ha_open(self) -> pd.Series:
+        """Heinki-Ashi Indicator Open
+  
+        Returns:
+            pandas.Series: New feature generated.
+        """
+        ha_open = self._check_fillna(self._ha_open, value=0)
+        return pd.Series(ha_open, name='ha_open')
+    
+    def ha_high(self) -> pd.Series:
+        """Heinki-Ashi Indicator High
+  
+        Returns:
+            pandas.Series: New feature generated.
+        """
+        ha_high = self._check_fillna(self._ha_high, value=0)
+        return pd.Series(ha_high, name='ha_high')
+    
+    def ha_low(self) -> pd.Series:
+        """Heinki-Ashi Indicator Low
+  
+        Returns:
+            pandas.Series: New feature generated.
+        """
+        ha_low = self._check_fillna(self._ha_low, value=0)
+        return pd.Series(ha_low, name='ha_low')
+
+
+
+class Williams_Alligator(IndicatorMixin):
+     def __init__(self, high: pd.Series,low: pd.Series, jaw: int = 13, teeth: int = 8, lip: int = 5, fillna: bool = False,adjust: bool = True):
+        self._high = high
+        self._low  = low
+        self._jaw_n = jaw
+        self._lip_n = lip
+        self._teeth_n = teeth
+        self._fillna = fillna
+        self.adjust = adjust
+        self._run()
+
+     def _run(self):
+        median = (self._high+self._low)/2
+        self.jaw    = pd.Series(median.ewm(alpha=1 / self._jaw_n, adjust=self.adjust).mean(), name="JAW")
+        self.teeth  = pd.Series(median.ewm(alpha=1 / self._teeth_n, adjust=self.adjust).mean(), name="TEETH")
+        self.lip    = pd.Series(median.ewm(alpha=1 / self._lip_n, adjust=self.adjust).mean(), name="LIP")
+        #print(jaw,teeth,lip)
+        
+     def wa_jaw(self) -> pd.Series:
+         """Williams Alligator Indicator Jaw
+  
+        Returns:
+            pandas.Series: New feature generated.
+        """
+         
+         jaw = self._check_fillna(self.jaw, value=0)
+         return pd.Series(jaw, name='jaw')
+    
+     def wa_teeth(self) -> pd.Series:
+         """Williams Alligator Indicator Teeth
+  
+        Returns:
+            pandas.Series: New feature generated.
+        """
+         teeth = self._check_fillna(self.teeth,value=0)
+         return pd.Series(teeth, name='teeth')
+    
+     def wa_lip(self) -> pd.Series:
+         """Williams Alligator Indicator Lip
+  
+        Returns:
+            pandas.Series: New feature generated.
+        """
+         lip = self._check_fillna(self.lip, value = 0)
+         return pd.Series(lip, name='lip')
+        
+        
+        
+        
+     
+        
+
 class RSIIndicator(IndicatorMixin):
     """Relative Strength Index (RSI)
 
@@ -34,6 +140,7 @@ class RSIIndicator(IndicatorMixin):
 
     def _run(self):
         diff = self._close.diff(1)
+        print(diff)
         up = diff.where(diff > 0, 0.0)
         dn = -diff.where(diff < 0, 0.0)
         emaup = up.ewm(alpha=1/self._n, min_periods=0, adjust=False).mean()
@@ -465,6 +572,100 @@ def rsi(close, n=14, fillna=False):
         pandas.Series: New feature generated.
     """
     return RSIIndicator(close=close, n=n, fillna=fillna).rsi()
+
+
+def ha_high(close,high,low,open, n=2, fillna=False):
+    """Relative Strength Index (RSI)
+ 
+
+    Compares the magnitude of recent gains and losses over a specified time
+    period to measure speed and change of price movements of a security. It is
+    primarily used to attempt to identify overbought or oversold conditions in
+    the trading of an asset.
+
+    https://www.investopedia.com/terms/r/rsi.asp
+
+    Args:
+        close(pandas.Series): dataset 'Close' column.
+        n(int): n period.
+        fillna(bool): if True, fill nan values.
+
+    Returns:
+        pandas.Series: New feature generated.
+        
+    """
+    indicator = Heikin_Ashi(close=df[close],high=df[high],low=df[low],open=df[open],n=2,fillna = fillna)
+    return indicator.ha_high()
+
+def ha_low(close,high,low,open, n=2, fillna=False):
+    """Relative Strength Index (RSI)
+ 
+
+    Compares the magnitude of recent gains and losses over a specified time
+    period to measure speed and change of price movements of a security. It is
+    primarily used to attempt to identify overbought or oversold conditions in
+    the trading of an asset.
+
+    https://www.investopedia.com/terms/r/rsi.asp
+
+    Args:
+        close(pandas.Series): dataset 'Close' column.
+        n(int): n period.
+        fillna(bool): if True, fill nan values.
+
+    Returns:
+        pandas.Series: New feature generated.
+        
+    """
+    indicator = Heikin_Ashi(close=df[close],high=df[high],low=df[low],open=df[open],n=2,fillna = fillna)
+    return indicator.ha_low()
+
+def ha_close(close,high,low,open, n=2, fillna=False):
+    """Relative Strength Index (RSI)
+ 
+
+    Compares the magnitude of recent gains and losses over a specified time
+    period to measure speed and change of price movements of a security. It is
+    primarily used to attempt to identify overbought or oversold conditions in
+    the trading of an asset.
+
+    https://www.investopedia.com/terms/r/rsi.asp
+
+    Args:
+        close(pandas.Series): dataset 'Close' column.
+        n(int): n period.
+        fillna(bool): if True, fill nan values.
+
+    Returns:
+        pandas.Series: New feature generated.
+        
+    """
+    indicator = Heikin_Ashi(close=df[close],high=df[high],low=df[low],open=df[open],n=2,fillna = fillna)
+    return indicator.ha_close()
+
+
+def ha_open(close,high,low,open, n=2, fillna=False):
+    """Relative Strength Index (RSI)
+ 
+
+    Compares the magnitude of recent gains and losses over a specified time
+    period to measure speed and change of price movements of a security. It is
+    primarily used to attempt to identify overbought or oversold conditions in
+    the trading of an asset.
+
+    https://www.investopedia.com/terms/r/rsi.asp
+
+    Args:
+        close(pandas.Series): dataset 'Close' column.
+        n(int): n period.
+        fillna(bool): if True, fill nan values.
+
+    Returns:
+        pandas.Series: New feature generated.
+        
+    """
+    indicator = Heikin_Ashi(close=df[close],high=df[high],low=df[low],open=df[open],n=2,fillna = fillna)
+    return indicator.ha_open()
 
 
 def tsi(close, r=25, s=13, fillna=False):
